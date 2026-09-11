@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#05030a">
+  <title>Para Carlinha 157 ❤️</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #05030a;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      color: white;
+    }
+
+    canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .content {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      padding: 0 20px 7vh;
+      pointer-events: none;
+      text-align: center;
+      z-index: 2;
+    }
+
+    .title, .subtitle, .love, .final {
+      opacity: 0;
+      transform: translateY(18px) scale(.96);
+      text-shadow: 0 0 12px rgba(255, 91, 171, .75),
+                   0 0 28px rgba(255, 50, 150, .35);
+      transition: opacity 1.4s ease, transform 1.4s ease;
+    }
+
+    .title.show, .subtitle.show, .love.show, .final.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .title {
+      font-size: clamp(34px, 8vw, 68px);
+      font-weight: 800;
+      color: #ffd4e9;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: clamp(17px, 4vw, 27px);
+      color: #ff9aca;
+      font-style: italic;
+    }
+
+    .love {
+      margin-top: 22px;
+      max-width: 900px;
+      font-size: clamp(24px, 5.5vw, 48px);
+      line-height: 1.15;
+      font-weight: 900;
+      color: #fff0f8;
+    }
+
+    .final {
+      margin-top: 8px;
+      font-size: clamp(13px, 3.2vw, 20px);
+      letter-spacing: 3px;
+      color: #ffb4d7;
+    }
+
+    .start {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      z-index: 5;
+      background: radial-gradient(circle, #170816 0%, #05030a 65%);
+      transition: opacity 1s ease, visibility 1s ease;
+    }
+
+    .start.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .start button {
+      border: 1px solid rgba(255, 147, 203, .65);
+      border-radius: 999px;
+      padding: 16px 30px;
+      background: rgba(255, 75, 163, .12);
+      color: #ffd8ea;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 0 25px rgba(255, 63, 158, .25);
+      backdrop-filter: blur(8px);
+    }
+
+    .hint {
+      position: absolute;
+      bottom: 28px;
+      color: rgba(255, 202, 228, .6);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <div class="start" id="start">
+    <button id="startButton">Toque para abrir ❤️</button>
+    <div class="hint">Uma surpresa para você...</div>
+  </div>
+
+  <div class="content">
+    <div class="title" id="title">Carlinha 157 ❤️</div>
+    <div class="subtitle" id="subtitle">Obrigado por tudo.</div>
+    <div class="love" id="love">Você sempre será a cacheada da minha vida. ❤️</div>
+    <div class="final" id="final">Com todo meu carinho ❤️</div>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+  const start = document.getElementById("start");
+  const startButton = document.getElementById("startButton");
+
+  const title = document.getElementById("title");
+  const subtitle = document.getElementById("subtitle");
+  const love = document.getElementById("love");
+  const finalText = document.getElementById("final");
+
+  let W, H, dpr;
+  let started = false;
+  let startTime = 0;
+  let particles = [];
+  let stars = [];
+  let floaters = [];
+
+  const TAU = Math.PI * 2;
+
+  const colors = [
+    "#ff176f", "#ff38a5", "#a53cff",
+    "#25dfff", "#21ff9b", "#ffe44d",
+    "#ff7a28", "#ffffff"
+  ];
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  window.addEventListener("resize", resize);
+  resize();
+
+  // Coordenadas do coração matemático.
+  function heart(t, scale) {
+    return {
+      x: 16 * Math.sin(t) ** 3 * scale,
+      y: (
+        13 * Math.cos(t)
+        - 5 * Math.cos(2*t)
+        - 2 * Math.cos(3*t)
+        - Math.cos(4*t)
+      ) * scale
+    };
+  }
+
+  function targetPoint(t, scale) {
+    const p = heart(t, scale);
+    return {
+      x: W / 2 + p.x,
+      y: H * 0.42 - p.y
+    };
+  }
+
+  function buildScene() {
+    particles = [];
+    stars = [];
+    floaters = [];
+
+    for (let i = 0; i < 2600; i++) {
+      const t = Math.random() * TAU;
+      const scale = 8.7 + Math.random() * 1.4;
+      const target = targetPoint(t, scale);
+
+      // Espalhadas pela tela no início.
+      const angle = Math.random() * TAU;
+      const radius = 160 + Math.random() * Math.max(W, H) * .55;
+
+      particles.push({
+        sx: W/2 + Math.cos(angle) * radius,
+        sy: H*.42 + Math.sin(angle) * radius,
+        tx: target.x,
+        ty: target.y,
+        t,
+        size: .55 + Math.random() * 1.65,
+        delay: Math.random() * 1500,
+        color: colors[i % colors.length],
+        phase: Math.random() * TAU
+      });
+    }
+
+    for (let i = 0; i < 170; i++) {
+      stars.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r: .4 + Math.random() * 1.5,
+        phase: Math.random() * TAU
+      });
+    }
+
+    for (let i = 0; i < 130; i++) {
+      floaters.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: (Math.random()-.5)*.35,
+        vy: -.25 - Math.random()*.8,
+        size: 1 + Math.random()*2.2,
+        color: colors[Math.floor(Math.random()*colors.length)],
+        phase: Math.random()*TAU
+      });
+    }
+  }
+
+  function easeOut(t) {
+    return 1 - Math.pow(1 - t, 3);
+  }
+
+  function drawHeartGlow(progress, pulse) {
+    if (progress <= 0) return;
+
+    // Brilho suave atrás do coração.
+    const grad = ctx.createRadialGradient(
+      W/2, H*.42, 5,
+      W/2, H*.42, Math.min(W,H)*.43
+    );
+    grad.addColorStop(0, "rgba(255, 70, 160, .16)");
+    grad.addColorStop(.45, "rgba(255, 40, 140, .07)");
+    grad.addColorStop(1, "rgba(255, 0, 120, 0)");
+
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+
+    for (const p of particles) {
+      const local = Math.max(0, Math.min(1, (progress*1500 - p.delay) / 900));
+      const e = easeOut(local);
+
+      let x = p.sx + (p.tx - p.sx) * e;
+      let y = p.sy + (p.ty - p.sy) * e;
+
+      if (e > .97) {
+        x = W/2 + (p.tx - W/2) * pulse;
+        y = H*.42 + (p.ty - H*.42) * pulse;
+      }
+
+      const twinkle = .65 + .35 * Math.sin(performance.now()/170 + p.phase);
+      const alpha = Math.max(.08, e) * twinkle;
+
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(x, y, p.size, 0, TAU);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  function drawOrbitingHearts(time, progress) {
+    if (progress < .9) return;
+
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+
+    for (let i = 0; i < 9; i++) {
+      const a = time * .00035 + i * TAU/9;
+      const rx = Math.min(W*.38, 350);
+      const ry = Math.min(H*.30, 250);
+
+      const x = W/2 + Math.cos(a) * rx;
+      const y = H*.42 + Math.sin(a) * ry;
+
+      ctx.globalAlpha = .35 + .35*Math.sin(time/300+i);
+      ctx.fillStyle = colors[i % colors.length];
+      drawMiniHeart(x, y, 4 + (i%3));
+    }
+
+    ctx.restore();
+  }
+
+  function drawMiniHeart(x, y, s) {
+    ctx.beginPath();
+    for (let i = 0; i <= 40; i++) {
+      const t = i/40*TAU;
+      const p = heart(t, s/16);
+      const px = x + p.x;
+      const py = y - p.y;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.fill();
+  }
+
+  function drawBackground(time) {
+    ctx.fillStyle = "#05030a";
+    ctx.fillRect(0, 0, W, H);
+
+    for (const s of stars) {
+      const a = .25 + .5 * (.5 + .5*Math.sin(time/700+s.phase));
+      ctx.globalAlpha = a;
+      ctx.fillStyle = "#ffd8ea";
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, TAU);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    for (const f of floaters) {
+      f.x += f.vx;
+      f.y += f.vy;
+
+      if (f.y < -10) {
+        f.y = H + 10;
+        f.x = Math.random()*W;
+      }
+
+      ctx.globalAlpha = .25 + .45*Math.sin(time/500+f.phase)**2;
+      ctx.fillStyle = f.color;
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, f.size, 0, TAU);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function animate(now) {
+    if (!started) return;
+
+    const elapsed = now - startTime;
+    const formation = Math.min(1, elapsed / 5200);
+
+    drawBackground(now);
+
+    // O coração nasce aos poucos.
+    const pulse = elapsed > 5200
+      ? 1 + Math.sin((elapsed-5200)*.0065)*.028
+      : 1;
+
+    drawHeartGlow(formation, pulse);
+    drawOrbitingHearts(now, formation);
+
+    // Pequeno brilho no centro depois da formação.
+    if (formation >= 1) {
+      const glow = 18 + 10*Math.sin(elapsed*.008);
+      const g = ctx.createRadialGradient(W/2,H*.42,0,W/2,H*.42,glow);
+      g.addColorStop(0,"rgba(255,255,255,.95)");
+      g.addColorStop(1,"rgba(255,60,160,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(W/2,H*.42,glow,0,TAU);
+      ctx.fill();
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  startButton.addEventListener("click", () => {
+    if (started) return;
+    started = true;
+    startTime = performance.now();
+    buildScene();
+    start.classList.add("hidden");
+
+    // Entrada das mensagens em sequência.
+    setTimeout(() => title.classList.add("show"), 5600);
+    setTimeout(() => subtitle.classList.add("show"), 6800);
+    setTimeout(() => love.classList.add("show"), 8000);
+    setTimeout(() => finalText.classList.add("show"), 9300);
+
+    requestAnimationFrame(animate);
+  });
+})();
+</script>
+</body>
+</html>
